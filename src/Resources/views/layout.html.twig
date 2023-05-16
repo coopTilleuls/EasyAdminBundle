@@ -30,6 +30,14 @@
 
     {% block head_javascript %}
         <script src="{{ asset('app.js', ea.assets.defaultAssetPackageName) }}"></script>
+        <script>
+            const eventSource = new EventSource("{{ mercure(mercure_topic)|escape('js') }}");
+            eventSource.onmessage = event => {
+                const id = JSON.parse(event.data).id;
+                const entity = document.querySelector('tr[data-id="'+id+'"]');
+                if (entity) entity.className = "table-danger";
+            }
+        </script>
     {% endblock head_javascript %}
 
     {% block configured_javascripts %}
