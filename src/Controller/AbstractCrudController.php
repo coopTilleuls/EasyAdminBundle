@@ -59,6 +59,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Update;
 use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
 use function Symfony\Component\String\u;
 
@@ -68,6 +70,11 @@ use function Symfony\Component\String\u;
 abstract class AbstractCrudController extends AbstractController implements CrudControllerInterface
 {
     abstract public static function getEntityFqcn(): string;
+
+    public function __construct(
+        private HubInterface $hub,
+    ) {
+    }
 
     public function configureCrud(Crud $crud): Crud
     {
@@ -151,6 +158,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'global_actions' => $actions->getGlobalActions(),
             'batch_actions' => $actions->getBatchActions(),
             'filters' => $filters,
+            'mercure_topic' => $this->topicUri($context),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -186,6 +194,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'pageName' => Crud::PAGE_DETAIL,
             'templateName' => 'crud/detail',
             'entity' => $context->getEntity(),
+            'mercure_topic' => $this->topicUri($context),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -239,6 +248,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             } catch (\Exception) {
                 throw new BadRequestHttpException();
             }
+            $this->publish($context);
 
             if ($event->isPropagationStopped()) {
                 return $event->getResponse();
@@ -257,6 +267,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             $entityInstance = $event->getEntityInstance();
 
             $this->updateEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
+            $this->publish($context);
 
             $this->container->get('event_dispatcher')->dispatch(new AfterEntityUpdatedEvent($entityInstance));
 
@@ -268,6 +279,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'templateName' => 'crud/edit',
             'edit_form' => $editForm,
             'entity' => $context->getEntity(),
+            'mercure_topic' => $this->topicUri($context),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -314,6 +326,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             $entityInstance = $event->getEntityInstance();
 
             $this->persistEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
+            $this->publish($context);
 
             $this->container->get('event_dispatcher')->dispatch(new AfterEntityPersistedEvent($entityInstance));
             $context->getEntity()->setInstance($entityInstance);
@@ -326,6 +339,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'templateName' => 'crud/new',
             'entity' => $context->getEntity(),
             'new_form' => $newForm,
+            'mercure_topic' => $this->topicUri($context),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -377,6 +391,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
         $responseParameters = $this->configureResponseParameters(KeyValueStore::new([
             'entity' => $context->getEntity(),
+            'mercure_topic' => $this->topicUri($context),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -437,6 +452,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         $responseParameters = $this->configureResponseParameters(KeyValueStore::new([
             'entity' => $context->getEntity(),
             'batchActionDto' => $batchActionDto,
+            'mercure_topic' => $this->topicUri($context),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -548,6 +564,12 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         return $responseParameters;
     }
 
+    public function topicUri(AdminContext $context): string
+    {
+        $adminUrlGenerator = $this->container->get(AdminUrlGenerator::class);
+        return $adminUrlGenerator->setController($context->getEntity()->getFqcn())->unsetAllExcept('crudControllerFqcn')->generateUrl();
+    }
+
     protected function getContext(): ?AdminContext
     {
         return $this->container->get(AdminContextProvider::class)->getContext();
@@ -657,5 +679,18 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         }
 
         return $fieldAssetsDto;
+    }
+
+    /**
+     * @param AdminContext $context
+     * @return void
+     */
+    public function publish(AdminContext $context): void
+    {
+        $update = new Update(
+            $this->topicUri($context),
+            json_encode([$context->getEntity()->getPrimaryKeyName() => $context->getEntity()->getPrimaryKeyValueAsString()])
+        );
+        $this->hub->publish($update);
     }
 }
