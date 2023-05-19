@@ -30,14 +30,6 @@
 
     {% block head_javascript %}
         <script src="{{ asset('app.js', ea.assets.defaultAssetPackageName) }}"></script>
-        <script>
-            const eventSource = new EventSource("{{ mercure(mercure_topic)|escape('js') }}");
-            eventSource.onmessage = event => {
-                const id = JSON.parse(event.data).id;
-                const entity = document.querySelector('tr[data-id="'+id+'"]');
-                if (entity) entity.className = "table-danger";
-            }
-        </script>
     {% endblock head_javascript %}
 
     {% block configured_javascripts %}
@@ -63,6 +55,7 @@
         data-ea-content-width="{{ ea.crud.contentWidth ?? ea.dashboardContentWidth ?? 'normal' }}"
         data-ea-sidebar-width="{{ ea.crud.sidebarWidth ?? ea.dashboardSidebarWidth ?? 'normal' }}"
         data-ea-dark-scheme-is-enabled="{{ ea.dashboardHasDarkModeEnabled ? 'true' : 'false' }}"
+        data-ea-mercure-url="{{ mercure(mercure_topic) }}"
     >
     {% block javascript_page_layout %}
         <script src="{{ asset('page-layout.js', ea.assets.defaultAssetPackageName) }}"></script>
@@ -349,6 +342,12 @@
                                     </section>
                                 {% endblock content_header_wrapper %}
 
+                                <div id="update_button" class="text-center invisible">This page is outdated 
+                                    <button class="btn btn-lg btn-danger rounded-5" onclick="location.reload()"> Update 
+
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rotate-cw"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                                    </button>
+                                </div>
                                 <section id="main" class="content-body">
                                     {% block main %}{% endblock %}
                                 </section>

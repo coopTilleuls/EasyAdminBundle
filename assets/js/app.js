@@ -5,9 +5,13 @@ import bootstrap from 'bootstrap/dist/js/bootstrap.bundle';
 import Mark from 'mark.js/src/vanilla';
 import Autocomplete from './autocomplete';
 import {toggleVisibilityClasses} from "./helpers";
+import { NativeEventSource, EventSourcePolyfill } from 'event-source-polyfill';
 
 // Provide Bootstrap variable globally to allow custom backend pages to use it
 window.bootstrap = bootstrap;
+
+// Event source polyfill for mercure protocol 
+window.EventSource =  NativeEventSource || EventSourcePolyfill;
 
 document.addEventListener('DOMContentLoaded', () => {
     window.EasyAdminApp = new App();
@@ -30,6 +34,7 @@ class App {
         this.#createBatchActions();
         this.#createModalWindowsForDeleteActions();
         this.#createPopovers();
+        this.#registerMercureUpdateListener();
 
         document.addEventListener('ea.collection.item-added', () => this.#createAutoCompleteFields());
     }
@@ -393,5 +398,21 @@ class App {
                 toggleVisibilityClasses(secondValue, comparisonWidget.value !== 'between');
             });
         });
+    }
+
+    #registerMercureUpdateListener() {
+        const mercureURL = document.body.getAttribute('data-ea-mercure-url');
+        if (mercureURL.substring(0,4) != 'http') return;
+
+        const eventSource = new EventSource(mercureURL);
+        eventSource.onmessage = event => {
+            const id = JSON.parse(event.data).id;
+            const bodyId = document.body.getAttribute('id');
+            const row = document.querySelector('tr[data-id="'+id+'"]');
+            if (row) row.className = "table-danger";
+            if (row || bodyId.split('-')[3] == id) { // extracting entity key
+                document.querySelector('#update_button').classList.remove('invisible');
+            }
+        }
     }
 }
