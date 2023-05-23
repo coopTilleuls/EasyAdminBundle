@@ -691,6 +691,6 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             $this->topicUri($context),
             json_encode([$context->getEntity()->getPrimaryKeyName() => $context->getEntity()->getPrimaryKeyValueAsString()])
         );
-        $this->hub->publish($update);
+        if (isset($this->hub)) $this->hub->publish($update);
     }
 }
