@@ -370,8 +370,5 @@ return static function (ContainerConfigurator $container) {
         ->set(AssetPackage::class)
             ->arg(0, service('request_stack'))
             ->tag('assets.package', ['package' => AssetPackage::PACKAGE_NAME])
-
-        ->set(HubInterface::class)
-            ->call('setHub', [service(HubInterface::class)->nullOnInvalid()])
     ;
 };
