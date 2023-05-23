@@ -86,6 +86,7 @@ use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Mercure\HubInterface;
 
 return static function (ContainerConfigurator $container) {
     $services = $container->services()
@@ -369,5 +370,8 @@ return static function (ContainerConfigurator $container) {
         ->set(AssetPackage::class)
             ->arg(0, service('request_stack'))
             ->tag('assets.package', ['package' => AssetPackage::PACKAGE_NAME])
+
+        ->set(HubInterface::class)
+            ->args([service('hub')->nullOnInvalid()])
     ;
 };
