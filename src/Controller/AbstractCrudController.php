@@ -69,8 +69,6 @@ use function Symfony\Component\String\u;
  */
 abstract class AbstractCrudController extends AbstractController implements CrudControllerInterface
 {
-    private HubInterface $hub;
-
     abstract public static function getEntityFqcn(): string;
 
     public function configureCrud(Crud $crud): Crud
@@ -687,13 +685,13 @@ abstract class AbstractCrudController extends AbstractController implements Crud
      */
     public function publish(AdminContext $context): void
     {
-        $hub = $this->container->get(HubInterface::class);
-        if (empty($hub)) return;
+        if (! $this->container->has(HubInterface::class)) return;
 
         $update = new Update(
             $this->topicUri($context),
             json_encode([$context->getEntity()->getPrimaryKeyName() => $context->getEntity()->getPrimaryKeyValueAsString()])
         );
+        $hub = $this->container->get(HubInterface::class);
         $hub->publish($update);
     }
 }
