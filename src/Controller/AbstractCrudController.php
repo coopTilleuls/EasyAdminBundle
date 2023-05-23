@@ -69,12 +69,9 @@ use function Symfony\Component\String\u;
  */
 abstract class AbstractCrudController extends AbstractController implements CrudControllerInterface
 {
-    abstract public static function getEntityFqcn(): string;
+    private HubInterface $hub;
 
-    public function __construct(
-        private HubInterface $hub,
-    ) {
-    }
+    abstract public static function getEntityFqcn(): string;
 
     public function configureCrud(Crud $crud): Crud
     {
@@ -267,7 +264,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             $entityInstance = $event->getEntityInstance();
 
             $this->updateEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
-            $this->publish($context);
+            if (isset($this->hub)) $this->publish($context);
 
             $this->container->get('event_dispatcher')->dispatch(new AfterEntityUpdatedEvent($entityInstance));
 
@@ -326,7 +323,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             $entityInstance = $event->getEntityInstance();
 
             $this->persistEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
-            $this->publish($context);
+            if (isset($this->hub)) $this->publish($context);
 
             $this->container->get('event_dispatcher')->dispatch(new AfterEntityPersistedEvent($entityInstance));
             $context->getEntity()->setInstance($entityInstance);
@@ -691,6 +688,12 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             $this->topicUri($context),
             json_encode([$context->getEntity()->getPrimaryKeyName() => $context->getEntity()->getPrimaryKeyValueAsString()])
         );
-        if (isset($this->hub)) $this->hub->publish($update);
+        $this->hub->publish($update);
+    }
+
+    public function setHub(HubInterface $default): void
+    {
+        error_log('HUB!!!!!!!!!!');
+        $this->hub = $default;
     }
 }

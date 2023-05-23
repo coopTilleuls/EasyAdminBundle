@@ -372,6 +372,6 @@ return static function (ContainerConfigurator $container) {
             ->tag('assets.package', ['package' => AssetPackage::PACKAGE_NAME])
 
         ->set(HubInterface::class)
-            ->args([service('hub')->nullOnInvalid()])
+            ->call('setHub', [service(HubInterface::class)->nullOnInvalid()])
     ;
 };
