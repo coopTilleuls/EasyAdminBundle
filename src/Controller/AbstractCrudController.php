@@ -114,6 +114,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             FilterFactory::class => '?'.FilterFactory::class,
             FormFactory::class => '?'.FormFactory::class,
             PaginatorFactory::class => '?'.PaginatorFactory::class,
+            HubInterface::class => '?'.HubInterface::class,
         ]);
     }
 
@@ -264,7 +265,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             $entityInstance = $event->getEntityInstance();
 
             $this->updateEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
-            if (isset($this->hub)) $this->publish($context);
+
+            $this->publish($context);
 
             $this->container->get('event_dispatcher')->dispatch(new AfterEntityUpdatedEvent($entityInstance));
 
@@ -323,7 +325,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             $entityInstance = $event->getEntityInstance();
 
             $this->persistEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
-            if (isset($this->hub)) $this->publish($context);
+
+            $this->publish($context);
 
             $this->container->get('event_dispatcher')->dispatch(new AfterEntityPersistedEvent($entityInstance));
             $context->getEntity()->setInstance($entityInstance);
@@ -684,16 +687,13 @@ abstract class AbstractCrudController extends AbstractController implements Crud
      */
     public function publish(AdminContext $context): void
     {
+        $hub = $this->container->get(HubInterface::class);
+        if (empty($hub)) return;
+
         $update = new Update(
             $this->topicUri($context),
             json_encode([$context->getEntity()->getPrimaryKeyName() => $context->getEntity()->getPrimaryKeyValueAsString()])
         );
-        $this->hub->publish($update);
-    }
-
-    public function setHub(HubInterface $default): void
-    {
-        error_log('HUB!!!!!!!!!!');
-        $this->hub = $default;
+        $hub->publish($update);
     }
 }
