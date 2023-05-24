@@ -565,6 +565,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
     public function topicUri(AdminContext $context): string
     {
         $adminUrlGenerator = $this->container->get(AdminUrlGenerator::class);
+
         return $adminUrlGenerator->setController($context->getEntity()->getFqcn())->unsetAllExcept('crudControllerFqcn')->generateUrl();
     }
 
@@ -685,7 +686,9 @@ abstract class AbstractCrudController extends AbstractController implements Crud
      */
     public function publish(AdminContext $context): void
     {
-        if (! $this->container->has(HubInterface::class)) return;
+        if (!$this->container->has(HubInterface::class)) {
+            return;
+        }
 
         $update = new Update(
             $this->topicUri($context),
