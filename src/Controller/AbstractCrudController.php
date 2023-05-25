@@ -440,6 +440,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
             try {
                 $this->deleteEntity($entityManager, $entityInstance);
+                $this->publish($context, $entityDto);
             } catch (ForeignKeyConstraintViolationException $e) {
                 throw new EntityRemoveException(['entity_name' => $entityDto->toString(), 'message' => $e->getMessage()]);
             }
@@ -681,19 +682,18 @@ abstract class AbstractCrudController extends AbstractController implements Crud
     }
 
     /**
-     * @param AdminContext $context
-     * @return void
+     * @param EntityDto|null $entityDto Force an entity if the admin context is not bound
+     *                                  to a given entity (eg: batch deletion)
      */
-    public function publish(AdminContext $context): void
+    public function publish(AdminContext $context, EntityDto $entityDto = null): void
     {
         if (!$this->container->has(HubInterface::class)) {
             return;
         }
 
-        $update = new Update(
-            $this->topicUri($context),
-            json_encode([$context->getEntity()->getPrimaryKeyName() => $context->getEntity()->getPrimaryKeyValueAsString()])
-        );
+        $pk = $entityDto ? $entityDto->getPrimaryKeyValueAsString() : $context->getEntity()->getPrimaryKeyValueAsString();
+        $data = json_encode([$context->getEntity()->getPrimaryKeyName() => $pk]);
+        $update = new Update($this->topicUri($context), $data);
         $hub = $this->container->get(HubInterface::class);
         $hub->publish($update);
     }
