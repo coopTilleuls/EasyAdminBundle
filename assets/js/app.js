@@ -402,15 +402,15 @@ class App {
 
     #registerMercureUpdateListener() {
         const mercureURL = document.body.getAttribute('data-ea-mercure-url');
-        if (mercureURL.substring(0,4) != 'http') return;
+        if (! mercureURL) return;
 
         const eventSource = new EventSource(mercureURL);
         eventSource.onmessage = event => {
             const id = JSON.parse(event.data).id;
             const bodyId = document.body.getAttribute('id');
             const row = document.querySelector('tr[data-id="'+id+'"]');
-            if (row) row.className = "table-danger";
-            if (row || bodyId.split('-')[3] == id) { // extracting entity key
+            if (row) row.className = 'table-danger';
+            if (row || bodyId.split('-')[3] === id) { // extracting entity key
                 document.querySelector('#update_button').classList.remove('invisible');
             }
         }
