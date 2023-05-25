@@ -141,4 +141,9 @@ return [
         'no-more-results' => 'No more results',
         'loading-more-results' => 'Loading more results…',
     ],
+
+    'mercure' => [
+        'outdated' => 'The data displayed is outdated (it has been changed by another user).',
+        'reload' => 'Reload',
+    ],
 ];
