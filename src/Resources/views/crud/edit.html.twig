@@ -58,6 +58,10 @@
 
 {% block main %}
     {% if ea_call_function_if_exists('mercure') %}
+    <div id="conflict_notification_batchDelete" class="container text-center invisible">
+        <div class="alert alert-danger rounded-5">{{ 'mercure.deleted'|trans(domain = 'EasyAdminBundle') }}
+        </div>
+    </div>
     <div id="conflict_notification_delete" class="container text-center invisible">
         <div class="alert alert-danger rounded-5">{{ 'mercure.deleted'|trans(domain = 'EasyAdminBundle') }}
         </div>
