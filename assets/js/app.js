@@ -406,12 +406,16 @@ class App {
 
         const eventSource = new EventSource(mercureURL);
         eventSource.onmessage = event => {
-            const id = JSON.parse(event.data).id;
+            const data = JSON.parse(event.data);
+            const action = data.action;
+            const id = Object.values(data.id)[0];
             const bodyId = document.body.getAttribute('id');
             const row = document.querySelector('tr[data-id="'+id+'"]');
             if (row) row.className = 'table-danger';
             if (row || bodyId.split('-')[3] === id) { // extracting entity key
-                document.querySelector('#update_button').classList.remove('invisible');
+                let element = document.querySelector('#conflict_notification_'+action);
+                if (! element) element = document.querySelector('#conflict_notification');
+                if (element) element.classList.remove('invisible');
             }
         }
     }
