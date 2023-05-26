@@ -381,6 +381,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
         try {
             $this->deleteEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
+            $this->publish($context);
         } catch (ForeignKeyConstraintViolationException $e) {
             throw new EntityRemoveException(['entity_name' => $context->getEntity()->getName(), 'message' => $e->getMessage()]);
         }
@@ -692,7 +693,10 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         }
 
         $pk = $entityDto ? $entityDto->getPrimaryKeyValueAsString() : $context->getEntity()->getPrimaryKeyValueAsString();
-        $data = json_encode([$context->getEntity()->getPrimaryKeyName() => $pk]);
+        $data = json_encode([
+            'action' => $context->getRequest()->get('crudAction'),
+            'id' => [ $context->getEntity()->getPrimaryKeyName() => $pk ],
+        ]);
         $update = new Update($this->topicUri($context), $data);
         $hub = $this->container->get(HubInterface::class);
         $hub->publish($update);
