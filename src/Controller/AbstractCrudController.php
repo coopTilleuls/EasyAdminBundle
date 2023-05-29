@@ -17,6 +17,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Option\EA;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Contracts\Controller\CrudControllerInterface;
+use EasyCorp\Bundle\EasyAdminBundle\DependencyInjection\EasyAdminExtension;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\AssetsDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\BatchActionDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
@@ -60,6 +61,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\HubRegistry;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
 use function Symfony\Component\String\u;
@@ -112,7 +114,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             FilterFactory::class => '?'.FilterFactory::class,
             FormFactory::class => '?'.FormFactory::class,
             PaginatorFactory::class => '?'.PaginatorFactory::class,
-            HubInterface::class => '?'.HubInterface::class,
+            HubRegistry::class => '?'.HubRegistry::class,
         ]);
     }
 
@@ -155,6 +157,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'batch_actions' => $actions->getBatchActions(),
             'filters' => $filters,
             'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -191,6 +194,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'templateName' => 'crud/detail',
             'entity' => $context->getEntity(),
             'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -277,6 +281,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'edit_form' => $editForm,
             'entity' => $context->getEntity(),
             'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -338,6 +343,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'entity' => $context->getEntity(),
             'new_form' => $newForm,
             'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -391,6 +397,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         $responseParameters = $this->configureResponseParameters(KeyValueStore::new([
             'entity' => $context->getEntity(),
             'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -453,6 +460,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'entity' => $context->getEntity(),
             'batchActionDto' => $batchActionDto,
             'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -688,7 +696,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
      */
     public function publish(AdminContext $context, string $entityId = null): void
     {
-        if (!$this->container->has(HubInterface::class)) {
+        if (!$this->container->has(HubRegistry::class)) {
             return;
         }
 
@@ -698,7 +706,9 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'id' => [ $context->getEntity()->getPrimaryKeyName() => $pk ],
         ]);
         $update = new Update($this->topicUri($context), $data);
-        $hub = $this->container->get(HubInterface::class);
+        /* @var HubRegistry $hubRegistry */
+        $hubRegistry = $this->container->get(HubRegistry::class);
+        $hub = $hubRegistry->getHub($this->getParameter(EasyAdminExtension::PARAMETER_HUB));
         $hub->publish($update);
     }
 }
