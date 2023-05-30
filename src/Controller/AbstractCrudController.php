@@ -691,10 +691,6 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         return $fieldAssetsDto;
     }
 
-    /**
-     * @param EntityDto|null $entityDto Force an entity if the admin context is not bound
-     *                                  to a given entity (eg: batch deletion)
-     */
     public function publish(AdminContext $context, string $entityId = null): void
     {
         if (!$this->container->has(HubRegistry::class)) {
@@ -716,7 +712,9 @@ abstract class AbstractCrudController extends AbstractController implements Crud
     public function getHubName(): string|null
     {
         $name = $this->getParameter(EasyAdminExtension::PARAMETER_HUB);
-        if ($name === 'default') return null;
+        if ($name === 'default') {
+            return null;
+        }
 
         $hubs = $this->container->get(HubRegistry::class)->all();
         if (!isset($hubs[$name])) {
