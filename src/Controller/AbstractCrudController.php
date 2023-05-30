@@ -60,6 +60,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\Mercure\Exception\InvalidArgumentException;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\HubRegistry;
 use Symfony\Component\Mercure\Update;
@@ -157,7 +158,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'batch_actions' => $actions->getBatchActions(),
             'filters' => $filters,
             'mercure_topic' => $this->topicUri($context),
-            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -194,7 +195,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'templateName' => 'crud/detail',
             'entity' => $context->getEntity(),
             'mercure_topic' => $this->topicUri($context),
-            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -281,7 +282,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'edit_form' => $editForm,
             'entity' => $context->getEntity(),
             'mercure_topic' => $this->topicUri($context),
-            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -343,7 +344,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'entity' => $context->getEntity(),
             'new_form' => $newForm,
             'mercure_topic' => $this->topicUri($context),
-            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -397,7 +398,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         $responseParameters = $this->configureResponseParameters(KeyValueStore::new([
             'entity' => $context->getEntity(),
             'mercure_topic' => $this->topicUri($context),
-            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -460,7 +461,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'entity' => $context->getEntity(),
             'batchActionDto' => $batchActionDto,
             'mercure_topic' => $this->topicUri($context),
-            'hub_name' => $this->getParameter(EasyAdminExtension::PARAMETER_HUB),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -708,7 +709,20 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         $update = new Update($this->topicUri($context), $data);
         /* @var HubRegistry $hubRegistry */
         $hubRegistry = $this->container->get(HubRegistry::class);
-        $hub = $hubRegistry->getHub($this->getParameter(EasyAdminExtension::PARAMETER_HUB));
+        $hub = $hubRegistry->getHub($this->getHubName());
         $hub->publish($update);
+    }
+
+    public function getHubName(): string|null
+    {
+        $name = $this->getParameter(EasyAdminExtension::PARAMETER_HUB);
+        if ($name === 'default') return null;
+
+        $hubs = $this->container->get(HubRegistry::class)->all();
+        if (!isset($hubs[$name])) {
+            throw new InvalidArgumentException('Invalid hub name "'.$name.'". If not using the default Mercure hub, you must set the "ea.hub" parameter, allowed values: '.implode(', ',array_keys($hubs)));
+        }
+
+        return $name;
     }
 }
