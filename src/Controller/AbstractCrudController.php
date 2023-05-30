@@ -61,7 +61,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\Mercure\Exception\InvalidArgumentException;
-use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\HubRegistry;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
@@ -700,7 +699,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         $pk = $entityId ?? $context->getEntity()->getPrimaryKeyValueAsString();
         $data = json_encode([
             'action' => $context->getRequest()->get('crudAction'),
-            'id' => [ $context->getEntity()->getPrimaryKeyName() => $pk ],
+            'id' => [$context->getEntity()->getPrimaryKeyName() => $pk],
         ]);
         $update = new Update($this->topicUri($context), $data);
         /* @var HubRegistry $hubRegistry */
@@ -712,13 +711,13 @@ abstract class AbstractCrudController extends AbstractController implements Crud
     public function getHubName(): string|null
     {
         $name = $this->getParameter(EasyAdminExtension::PARAMETER_HUB);
-        if ($name === 'default') {
+        if ('default' === $name) {
             return null;
         }
 
         $hubs = $this->container->get(HubRegistry::class)->all();
         if (!isset($hubs[$name])) {
-            throw new InvalidArgumentException('Invalid hub name "'.$name.'". If not using the default Mercure hub, you must set the "ea.hub" parameter, allowed values: '.implode(', ',array_keys($hubs)));
+            throw new InvalidArgumentException('Invalid hub name "'.$name.'". If not using the default Mercure hub, you must set the "ea.hub" parameter, allowed values: '.implode(', ', array_keys($hubs)));
         }
 
         return $name;
