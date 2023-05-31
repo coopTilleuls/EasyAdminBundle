@@ -705,7 +705,11 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         /* @var HubRegistry $hubRegistry */
         $hubRegistry = $this->container->get(HubRegistry::class);
         $hub = $hubRegistry->getHub($this->getHubName());
-        $hub->publish($update);
+        try {
+            $hub->publish($update);
+        } catch (\RuntimeException $e) {
+            throw new \RuntimeException('Unable to publish on mercure hub. Either the server is unavailable or your configuration has errors');
+        }
     }
 
     public function getHubName(): string|null
