@@ -64,6 +64,7 @@ use Symfony\Component\Mercure\Exception\InvalidArgumentException;
 use Symfony\Component\Mercure\HubRegistry;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
+use Symfony\Component\Security\Core\User\UserInterface;
 use function Symfony\Component\String\u;
 
 /**
@@ -700,6 +701,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         $data = json_encode([
             'action' => $context->getRequest()->get('crudAction'),
             'id' => [$context->getEntity()->getPrimaryKeyName() => $pk],
+            'user' => $context->getUser()?->getUserIdentifier(),
         ]);
         $update = new Update($this->topicUri($context), $data);
         /* @var HubRegistry $hubRegistry */

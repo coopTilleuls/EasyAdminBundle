@@ -60,10 +60,12 @@
     {% if ea_call_function_if_exists('mercure') %}
     <div id="conflict_notification_batchDelete" class="container text-center invisible">
         <div class="alert alert-danger rounded-5">{{ 'mercure.deleted'|trans(domain = 'EasyAdminBundle') }}
+            <span class="conflict_notification_user invisible">({{ 'mercure.user_change'|trans(domain = 'EasyAdminBundle') }} <slot>(anonymous)</slot> ) </span>
         </div>
     </div>
     <div id="conflict_notification_delete" class="container text-center invisible">
         <div class="alert alert-danger rounded-5">{{ 'mercure.deleted'|trans(domain = 'EasyAdminBundle') }}
+            <span class="conflict_notification_user invisible">({{ 'mercure.user_change'|trans(domain = 'EasyAdminBundle') }} <slot>(anonymous)</slot> ) </span>
         </div>
     </div>
     {% endif %}

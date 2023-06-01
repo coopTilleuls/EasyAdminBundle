@@ -402,7 +402,9 @@ class App {
 
     #registerMercureUpdateListener() {
         const mercureURL = document.body.getAttribute('data-ea-mercure-url');
-        if (! mercureURL) return;
+        if (! mercureURL) {
+            return;
+        }
 
         const eventSource = new EventSource(mercureURL);
         eventSource.onmessage = event => {
@@ -411,11 +413,24 @@ class App {
             const id = Object.values(data.id)[0];
             const bodyId = document.body.getAttribute('id');
             const row = document.querySelector('tr[data-id="'+id+'"]');
-            if (row) row.className = 'table-danger';
+
+            if (row) {
+                row.className = 'table-danger';
+            }
             if (row || bodyId.split('-')[3] === id) { // extracting entity key
-                let element = document.querySelector('#conflict_notification_'+action);
-                if (! element) element = document.querySelector('#conflict_notification');
-                if (element) element.classList.remove('invisible');
+                let box_element = document.querySelector('#conflict_notification_'+action);
+                if (! box_element) {
+                    box_element = document.querySelector('#conflict_notification');
+                }
+                if (box_element) {
+                    box_element.classList.remove('invisible');
+                    let user_element = box_element.querySelector('.conflict_notification_user');
+                    if (user_element) {
+                        let user_slot = user_element.querySelector('slot');
+                        user_element.classList.remove('invisible');
+                        user_slot.textContent = data.user;
+                    }
+                }
             }
         }
     }
