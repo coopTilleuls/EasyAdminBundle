@@ -15,7 +15,7 @@ Then you need to configure the environment variables ``MERCURE_PUBLIC_URL``, ``M
 .. note::
 
     If you have multiple configured Mercure hubs, you can chose which one
-    will be used by EasyAdmin by setting the ``ea.hub`` parameter to the name 
+    will be used by EasyAdmin by setting the ``ea.mercure.hub`` parameter to the name
     of the hub in your project config
 
 

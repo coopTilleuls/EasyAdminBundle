@@ -723,7 +723,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
         $hubs = $this->container->get(HubRegistry::class)->all();
         if (!isset($hubs[$name])) {
-            throw new InvalidArgumentException('Invalid hub name "'.$name.'". If not using the default Mercure hub, you must set the "ea.hub" parameter, allowed values: '.implode(', ', array_keys($hubs)));
+            throw new InvalidArgumentException('Invalid hub name "'.$name.'". If not using the default Mercure hub, you must set the "'.EasyAdminExtension::PARAMETER_HUB.'" parameter, allowed values: '.implode(', ', array_keys($hubs)));
         }
 
         return $name;

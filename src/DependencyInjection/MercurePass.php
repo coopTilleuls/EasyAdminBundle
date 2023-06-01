@@ -5,7 +5,7 @@ namespace EasyCorp\Bundle\EasyAdminBundle\DependencyInjection;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-class SetDefaultParametersPass implements CompilerPassInterface
+final class MercurePass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {

@@ -52,7 +52,7 @@
         "symfony/css-selector": "^5.4|^6.0",
         "symfony/debug-bundle": "^5.4|^6.0",
         "symfony/dom-crawler": "^5.4|^6.0",
-        "symfony/mercure": "^0.6.3",
+        "symfony/mercure-bundle": "^0.3.7",
         "symfony/phpunit-bridge": "^5.4|^6.0"
     },
     "config": {
