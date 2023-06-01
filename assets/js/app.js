@@ -423,11 +423,11 @@ class App {
                     box_element = document.querySelector('#conflict_notification');
                 }
                 if (box_element) {
-                    box_element.classList.remove('invisible');
+                    box_element.classList.remove('d-none');
                     let user_element = box_element.querySelector('.conflict_notification_user');
-                    if (user_element) {
+                    if (data.user && user_element) {
                         let user_slot = user_element.querySelector('slot');
-                        user_element.classList.remove('invisible');
+                        user_element.classList.remove('d-none');
                         user_slot.textContent = data.user;
                     }
                 }
