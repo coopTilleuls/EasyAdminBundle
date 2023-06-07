@@ -143,7 +143,7 @@ return [
     ],
 
     'mercure' => [
-        'user_change' => 'Change by user',
+        'user_change' => 'Last Change by user',
         'deleted' => 'The entity displayed has been deleted.',
         'outdated' => 'The data displayed is outdated.',
         'reload' => 'Reload',
