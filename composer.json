@@ -37,6 +37,9 @@
         "symfony/uid": "^5.4|^6.0",
         "symfony/validator": "^5.4|^6.0"
     },
+    "suggest": {
+        "symfony/mercure-bundle": "To enable live updates support"
+    },
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^3.4",
         "phpstan/extension-installer": "^1.2",
@@ -49,6 +52,7 @@
         "symfony/css-selector": "^5.4|^6.0",
         "symfony/debug-bundle": "^5.4|^6.0",
         "symfony/dom-crawler": "^5.4|^6.0",
+        "symfony/mercure-bundle": "^0.3.7",
         "symfony/phpunit-bridge": "^5.4|^6.0"
     },
     "config": {

@@ -20,6 +20,7 @@ class EasyAdminExtension extends Extension
     public const TAG_DASHBOARD_CONTROLLER = 'ea.dashboard_controller';
     public const TAG_FIELD_CONFIGURATOR = 'ea.field_configurator';
     public const TAG_FILTER_CONFIGURATOR = 'ea.filter_configurator';
+    public const PARAMETER_HUB = 'ea.mercure.hub';
 
     public function load(array $configs, ContainerBuilder $container): void
     {

@@ -5,9 +5,13 @@ import bootstrap from 'bootstrap/dist/js/bootstrap.bundle';
 import Mark from 'mark.js/src/vanilla';
 import Autocomplete from './autocomplete';
 import {toggleVisibilityClasses} from "./helpers";
+import { NativeEventSource, EventSourcePolyfill } from 'event-source-polyfill';
 
 // Provide Bootstrap variable globally to allow custom backend pages to use it
 window.bootstrap = bootstrap;
+
+// Event source polyfill for mercure protocol 
+window.EventSource =  NativeEventSource || EventSourcePolyfill;
 
 document.addEventListener('DOMContentLoaded', () => {
     window.EasyAdminApp = new App();
@@ -30,6 +34,7 @@ class App {
         this.#createBatchActions();
         this.#createModalWindowsForDeleteActions();
         this.#createPopovers();
+        this.#registerMercureUpdateListener();
 
         document.addEventListener('ea.collection.item-added', () => this.#createAutoCompleteFields());
     }
@@ -393,5 +398,40 @@ class App {
                 toggleVisibilityClasses(secondValue, comparisonWidget.value !== 'between');
             });
         });
+    }
+
+    #registerMercureUpdateListener() {
+        const mercureURL = document.body.getAttribute('data-ea-mercure-url');
+        if (! mercureURL) {
+            return;
+        }
+
+        const eventSource = new EventSource(mercureURL);
+        eventSource.onmessage = event => {
+            const data = JSON.parse(event.data);
+            const action = data.action;
+            const id = Object.values(data.id)[0];
+            const bodyId = document.body.getAttribute('id');
+            const row = document.querySelector('tr[data-id="'+id+'"]');
+
+            if (row) {
+                row.className = 'table-danger';
+            }
+            if (row || bodyId.split('-')[3] === id) { // extracting entity key
+                let box_element = document.querySelector('#conflict_notification_'+action);
+                if (! box_element) {
+                    box_element = document.querySelector('#conflict_notification');
+                }
+                if (box_element) {
+                    box_element.classList.remove('d-none');
+                    let user_element = box_element.querySelector('.conflict_notification_user');
+                    if (data.user && user_element) {
+                        let user_slot = user_element.querySelector('slot');
+                        user_element.classList.remove('d-none');
+                        user_slot.textContent = data.user;
+                    }
+                }
+            }
+        }
     }
 }

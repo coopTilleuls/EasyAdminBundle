@@ -17,6 +17,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Option\EA;
 use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Contracts\Controller\CrudControllerInterface;
+use EasyCorp\Bundle\EasyAdminBundle\DependencyInjection\EasyAdminExtension;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\AssetsDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\BatchActionDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
@@ -59,7 +60,11 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\Mercure\Exception\InvalidArgumentException;
+use Symfony\Component\Mercure\HubRegistry;
+use Symfony\Component\Mercure\Update;
 use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
+use Symfony\Component\Security\Core\User\UserInterface;
 use function Symfony\Component\String\u;
 
 /**
@@ -110,6 +115,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             FilterFactory::class => '?'.FilterFactory::class,
             FormFactory::class => '?'.FormFactory::class,
             PaginatorFactory::class => '?'.PaginatorFactory::class,
+            HubRegistry::class => '?'.HubRegistry::class,
         ]);
     }
 
@@ -151,6 +157,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'global_actions' => $actions->getGlobalActions(),
             'batch_actions' => $actions->getBatchActions(),
             'filters' => $filters,
+            'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -186,6 +194,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'pageName' => Crud::PAGE_DETAIL,
             'templateName' => 'crud/detail',
             'entity' => $context->getEntity(),
+            'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -239,6 +249,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             } catch (\Exception) {
                 throw new BadRequestHttpException();
             }
+            $this->publish($context);
 
             if ($event->isPropagationStopped()) {
                 return $event->getResponse();
@@ -258,6 +269,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
             $this->updateEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
 
+            $this->publish($context);
+
             $this->container->get('event_dispatcher')->dispatch(new AfterEntityUpdatedEvent($entityInstance));
 
             return $this->getRedirectResponseAfterSave($context, Action::EDIT);
@@ -268,6 +281,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'templateName' => 'crud/edit',
             'edit_form' => $editForm,
             'entity' => $context->getEntity(),
+            'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -315,6 +330,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
             $this->persistEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
 
+            $this->publish($context);
+
             $this->container->get('event_dispatcher')->dispatch(new AfterEntityPersistedEvent($entityInstance));
             $context->getEntity()->setInstance($entityInstance);
 
@@ -326,6 +343,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
             'templateName' => 'crud/new',
             'entity' => $context->getEntity(),
             'new_form' => $newForm,
+            'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -369,6 +388,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
         try {
             $this->deleteEntity($this->container->get('doctrine')->getManagerForClass($context->getEntity()->getFqcn()), $entityInstance);
+            $this->publish($context);
         } catch (ForeignKeyConstraintViolationException $e) {
             throw new EntityRemoveException(['entity_name' => $context->getEntity()->getName(), 'message' => $e->getMessage()]);
         }
@@ -377,6 +397,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
         $responseParameters = $this->configureResponseParameters(KeyValueStore::new([
             'entity' => $context->getEntity(),
+            'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -427,6 +449,7 @@ abstract class AbstractCrudController extends AbstractController implements Crud
 
             try {
                 $this->deleteEntity($entityManager, $entityInstance);
+                $this->publish($context, $entityId);
             } catch (ForeignKeyConstraintViolationException $e) {
                 throw new EntityRemoveException(['entity_name' => $entityDto->toString(), 'message' => $e->getMessage()]);
             }
@@ -437,6 +460,8 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         $responseParameters = $this->configureResponseParameters(KeyValueStore::new([
             'entity' => $context->getEntity(),
             'batchActionDto' => $batchActionDto,
+            'mercure_topic' => $this->topicUri($context),
+            'hub_name' => $this->getHubName(),
         ]));
 
         $event = new AfterCrudActionEvent($context, $responseParameters);
@@ -548,6 +573,13 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         return $responseParameters;
     }
 
+    public function topicUri(AdminContext $context): string
+    {
+        $adminUrlGenerator = $this->container->get(AdminUrlGenerator::class);
+
+        return $adminUrlGenerator->setController($context->getEntity()->getFqcn())->unsetAllExcept('crudControllerFqcn')->generateUrl();
+    }
+
     protected function getContext(): ?AdminContext
     {
         return $this->container->get(AdminContextProvider::class)->getContext();
@@ -657,5 +689,43 @@ abstract class AbstractCrudController extends AbstractController implements Crud
         }
 
         return $fieldAssetsDto;
+    }
+
+    public function publish(AdminContext $context, string $entityId = null): void
+    {
+        if (!$this->container->has(HubRegistry::class)) {
+            return;
+        }
+
+        $pk = $entityId ?? $context->getEntity()->getPrimaryKeyValueAsString();
+        $data = json_encode([
+            'action' => $context->getRequest()->get('crudAction'),
+            'id' => [$context->getEntity()->getPrimaryKeyName() => $pk],
+            'user' => $context->getUser()?->getUserIdentifier(),
+        ]);
+        $update = new Update($this->topicUri($context), $data);
+        /* @var HubRegistry $hubRegistry */
+        $hubRegistry = $this->container->get(HubRegistry::class);
+        $hub = $hubRegistry->getHub($this->getHubName());
+        try {
+            $hub->publish($update);
+        } catch (\RuntimeException $e) {
+            throw new \RuntimeException('Unable to publish on mercure hub. Either the server is unavailable or your configuration has errors');
+        }
+    }
+
+    public function getHubName(): string|null
+    {
+        $name = $this->getParameter(EasyAdminExtension::PARAMETER_HUB);
+        if ('default' === $name) {
+            return null;
+        }
+
+        $hubs = $this->container->get(HubRegistry::class)->all();
+        if (!isset($hubs[$name])) {
+            throw new InvalidArgumentException('Invalid hub name "'.$name.'". If not using the default Mercure hub, you must set the "'.EasyAdminExtension::PARAMETER_HUB.'" parameter, allowed values: '.implode(', ', array_keys($hubs)));
+        }
+
+        return $name;
     }
 }

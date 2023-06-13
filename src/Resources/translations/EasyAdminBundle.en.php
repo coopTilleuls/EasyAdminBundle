@@ -141,4 +141,11 @@ return [
         'no-more-results' => 'No more results',
         'loading-more-results' => 'Loading more results…',
     ],
+
+    'mercure' => [
+        'user_change' => 'Last Change by user',
+        'deleted' => 'The entity displayed has been deleted.',
+        'outdated' => 'The data displayed is outdated.',
+        'reload' => 'Reload',
+    ],
 ];

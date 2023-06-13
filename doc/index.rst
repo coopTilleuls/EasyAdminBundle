@@ -28,6 +28,7 @@ Table of Contents
     security
     events
     tests
+    mercure
     upgrade
 
 Technical Requirements
